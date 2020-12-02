@@ -29,24 +29,15 @@ def multinomial_entropy(n, m, Xi, Omega, p, log_base):
         \[ H^{mult} = - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij})
                       + \sum_{x=2}^m \sum_{i,j \in V, i<j} p_{ij}^x (1-p_{ij})^{m-x} \log(x!) \]
     """
-    H_mult = - log(factorial(m), log_base) \
-             - m * sum([p[i,j] * log(p[i,j], log_base) if p[i,j]!=0 else 0
+    s1 = sum([p[i,j] * log(p[i,j], log_base) if p[i,j]!=0 else 0
                         for i in range(n)
-                        for j in range(n)]) \
-             + sum([sum([comb(m, x) * p[i,j]**x * (1-p[i,j])**(m-x) * log(factorial(x))
+                        for j in range(n)])
+    s2 = sum([sum([comb(m, x) * p[i,j]**x * (1-p[i,j])**(m-x) * log(factorial(x))
                          if p[i,j]!=0 else 0
                          for i in range(n)
                          for j in range(n)])
                     for x in range(2, m+1)])
-    """H_mult = - log(factorial(m), log_base) \
-             - m * sum([p[i,j] * log(p[i,j], log_base) if i<j else 0
-                        for i in range(n)
-                        for j in range(n)]) \
-             + sum([sum([comb(m, x) * p[i,j]**x * (1-p[i,j])**(m-x) * log(factorial(x))
-                         if i<j else 0
-                         for i in range(n)
-                         for j in range(n)])
-                    for x in range(2, m+1)])"""
+    H_mult = - log(factorial(m), log_base) - m * s1 + s2
     return H_mult
 
 

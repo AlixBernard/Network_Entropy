@@ -7,8 +7,8 @@ This implementation only works for the case taken into account in the paper refe
 Prior to running this sample of code, `g` must be defined as a `networkx.MultiGraph` meaning it is an undirected graph with multi-edges.
 ```py
 org = Network(g, name='My Organization', case=3)    # initiate the object
-org.do_the_work()    # perform the computations to obtain the entropy
-org.display()    # display some quantities of interest including the entropy
+org()    # perform the computations to obtain the entropy
+org    # display some quantities of interest including the entropy
 ```
 
 # References

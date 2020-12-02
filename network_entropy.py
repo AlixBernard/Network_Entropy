@@ -26,7 +26,8 @@ import networkx as nx
 def multinomial_entropy(n, m, Xi, Omega, p, log_base):
     r""" Compute the multinomial entropy and returns it.
     math::
-        \[ H^{mult} = - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij}) + \sum_{x=2}^m \sum_{i,j \in V, i<j} p_{ij}^x (1-p_{ij})^{m-x} \log(x!) \]
+        \[ H^{mult} = - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij})
+                      + \sum_{x=2}^m \sum_{i,j \in V, i<j} p_{ij}^x (1-p_{ij})^{m-x} \log(x!) \]
     """
     H_mult = - log(factorial(m), log_base) \
              - m * sum([p[i,j] * log(p[i,j], log_base) if p[i,j]!=0 else 0
@@ -198,7 +199,7 @@ class Network():
     def _compute_H_norm(self):
         self.H_norm = self.H_mult / self.H_max
     
-    def do_the_work(self):
+    def __call__(self):
         """ Perform all computations to set the attributes that are currently None type.
         """
         self._compute_theta()
@@ -208,7 +209,7 @@ class Network():
         self._compute_H_max()
         self._compute_H_norm()
     
-    def display(self):
+    def __repr__(self):
         """ Display the graph of the network as well as some more information,
         n: number of nodes, m: number of edges, m/n: average number of multi-
         edges per nodes, D: density of the network, H_mult: normalized multinomial entropy.
@@ -234,6 +235,8 @@ class Network():
         H_mult = self.H_mult
         H_norm = self.H_norm
         H_gcc = 'NA'
-        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>6} '.format('Name', 'n', 'm', 'm/n', 'D', 'H_norm'))
+        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>6} '.format(
+            'Name', 'n', 'm', 'm/n', 'D', 'H_norm'))
         print((16 + 20 + 4*5 + 2*5) * '-')
-        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>5} '.format(name, n, m, '{:.2f}'.format(m/n), '{:.2f}'.format(D), '{:.2f}'.format(H_norm)))
+        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>5} '.format(
+            name, n, m, '{:.2f}'.format(m/n), '{:.2f}'.format(D), '{:.2f}'.format(H_norm)))

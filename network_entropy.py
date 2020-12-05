@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2019-12-01
+# @Last modified time: 2019-12-05
 
 """
 This program computes the entropy of a network such as
@@ -26,13 +26,13 @@ import networkx as nx
 def multinomial_entropy(n, m, Xi, Omega, p, log_base):
     r""" Compute the multinomial entropy and returns it.
     math::
-        \[ H^{mult} = - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij})
+        \[ H^{mult} = - \log (m!) - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij})
                       + \sum_{x=2}^m \sum_{i,j \in V, i<j} p_{ij}^x (1-p_{ij})^{m-x} \log(x!) \]
     """
     s1 = sum([p[i,j] * log(p[i,j], log_base) if p[i,j]!=0 else 0
                         for i in range(n)
                         for j in range(n)])
-    s2 = sum([sum([comb(m, x) * p[i,j]**x * (1-p[i,j])**(m-x) * log(factorial(x))
+    s2 = sum([sum([comb(m, x) * p[i,j]**x * (1-p[i,j])**(m-x) * log(factorial(x), log_base)
                          if p[i,j]!=0 else 0
                          for i in range(n)
                          for j in range(n)])
@@ -54,6 +54,11 @@ class Network():
         self-loops, 3: undirected without self-loops
     log_base: int
         Logarithmic base to use when computing the entropy.
+    name: str
+        Name of the network
+    edges_matrix: np.array
+        Matrix of the graph edges, if None then taken without 
+        multi-edges from the nx.Graph input
     
     Attributes
     ----------
@@ -84,18 +89,30 @@ class Network():
     do_the_work
     display
     """
-    def __init__(self, network, case=0, log_base=2, name='network'):
+    def __init__(self, network, case=0, log_base=2, name='network', edges_matrix=None):
         self.network = network
         self.case = case
         self.log_base = log_base
         self.name = name
         self.verticies = nx.nodes(self.network)
-        self.edges = nx.edges(self.network)
-        n = len(self.verticies)
-        m = len(self.edges)
+        self.n = int(len(self.verticies))
+        n = self.n
+        if edges_matrix.all() == None:
+            self.edges = nx.edges(self.network)
+            self.A = self._get_edges_connexions()
+            self.m = int(len(self.edges))
+        else:
+            self.edges = edges_matrix
+            self.A = edges_matrix
+            self.m = int(sum([edges_matrix[i,j] if i <= j else 0
+                          for j in range(n)
+                          for i in range(n)]))
+        n = self.n
+        m = self.m
         self.nb_possible_networks = comb(int(n*(n-1)/2 + m - 1), m)
-        self.A = self._get_edges_connexions()
-        self.d = np.array([sum([self.A[i,j] for j in range(n)]) for i in range(n)])
+        self.d = np.array([sum([self.A[i,j] + self.A[j,i]
+                                for j in range(n)])
+                           for i in range(n)])
         self.Xi = None
         self.Omega = None
         self.theta = None
@@ -104,7 +121,7 @@ class Network():
         self.H_norm = None
     
     def _get_edges_connexions(self):
-        n = len(self.verticies)
+        n = self.n
         A = np.zeros((n,n))
         i = 0
         for v1 in self.verticies:
@@ -116,8 +133,8 @@ class Network():
         return A
     
     def _compute_Xi(self):
-        n = len(self.verticies)
-        m = len(self.edges)
+        n = self.n
+        m = self.m
         Xi = np.zeros((n,n))
         for i in range(n):
             for j in range(n):
@@ -126,8 +143,8 @@ class Network():
         self.Xi = Xi
     
     def _compute_Omega(self):
-        n = len(self.verticies)
-        m = len(self.edges)
+        n = self.n
+        m = self.m
         Omega = np.zeros((n,n))
         for i in range(n):
             for j in range(n):
@@ -156,8 +173,8 @@ class Network():
             return sol
         
         case = self.case
-        n = len(self.verticies)
-        m = len(self.edges)
+        n = self.n
+        m = self.m
         if case in [0, 1]:
             theta = np.ones(n)
         else:
@@ -170,18 +187,21 @@ class Network():
         self.theta = theta
     
     def _compute_H_mult(self):
-        n = len(self.verticies)
-        m = len(self.edges)
+        n = self.n
+        m = self.m
         p = np.ones((n,n))
         p = self.Xi * self.Omega / np.sum(self.Xi * self.Omega)
         self.H_mult = multinomial_entropy(n, m, self.Xi, self.Omega, p, self.log_base)
     
     def _compute_H_max(self):
         case = self.case
-        n = len(self.verticies)
-        m = len(self.edges)
+        n = self.n
+        m = self.m
         if case == 3:
-            p = (2 / (n * (n-1)) * np.ones((n,n)))
+            p = [[2 / (n * (n-1)) if i<j else 0
+                  for j in range(n)]
+                 for i in range(n)]
+            p = np.array(p)
         else:
             print('Error: p_ij_max not defined for the case {}'.format(case))
         
@@ -209,8 +229,8 @@ class Network():
         
         case = self.case
         name = self.name
-        n = len(self.verticies)
-        m = len(self.edges)
+        n = self.n
+        m = self.m
         A = self.A
         if case in [0, 1]:
             # case with self-loops
@@ -219,15 +239,13 @@ class Network():
                      for j in range(n)]) / (n**2)
         elif case in [2, 3]:
             # case without self-loops
-            D = sum([1 if A[i,j] != 0 else 0
-                     for i in range(n)
-                     for j in range(n)]) / (n**2 - n)
+            D = 2*sum([1 if A[i,j] != 0 else 0
+                       for i in range(n)
+                       for j in range(n)]) / (n**2 - n)
         
         H_mult = self.H_mult
         H_norm = self.H_norm
         H_gcc = 'NA'
-        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>6} '.format(
-            'Name', 'n', 'm', 'm/n', 'D', 'H_norm'))
+        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>6} '.format('Name', 'n', 'm', 'm/n', 'D', 'H_norm'))
         print((16 + 20 + 4*5 + 2*5) * '-')
-        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>5} '.format(
-            name, n, m, '{:.2f}'.format(m/n), '{:.2f}'.format(D), '{:.2f}'.format(H_norm)))
+        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>5} '.format(name, n, m, '{:.2f}'.format(m/n), '{:.2f}'.format(D), '{:.2f}'.format(H_norm)))

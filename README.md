@@ -1,5 +1,5 @@
 # Overview
-Entropy computation of a Network based on \[1\][1], which makes use of the gHypEG from \[2\][2].
+Entropy computation of a Network based on [\[1\]][1], which makes use of the gHypEG from [\[2\]][2].
 
 ![IMPORTANT] This implementation only works for the case taken into account in the paper referenced, *i.e.* networks with undirected graphs and without self-loops (described by case `3` in the code).
 

@@ -1,7 +1,7 @@
 # Overview
 Entropy computation of a Network based on [\[1\]][1], which makes use of the gHypEG from [\[2\]][2].
 
-**IMPORTANT**: This implementation only works for the case taken into account in [\[1\]][1], _ie._ only the case of undirected graph without self-loops (`case=3`). In order to use it for other types of networks --- not recommended, may not be possible with this method --- some modifications are in order, such as modifying the entries of the matrix `Xi` (cf. [\[1\]][1] & [\[2\]][2] for more details).  
+**IMPORTANT**: This implementation only works for the case taken into account in [\[1\]][1], _ie._ only the case of undirected graph without self-loops: `case=3`. In order to use it for other types of networks &mdash; not recommended, may not be possible with this method &mdash; some modifications are in order, such as modifying the entries of the matrix `Xi` (cf. [\[1\]][1] & [\[2\]][2] for more details).  
 
 # Example of use
 Prior to running this sample of code, `g` must be defined as a `networkx.MultiGraph` meaning it is an undirected graph with multi-edges, and `edges` must be an `np.array` representing the matrix of edges of the graph, such that if it is undirected then the bottom triangle of the matrix is `0`.

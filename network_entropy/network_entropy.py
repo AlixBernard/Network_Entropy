@@ -1,43 +1,48 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # coding: utf-8
 # @Author: AlixBernard
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2019-12-05
+# @Last modified time: 2021-07-23
 
-"""
-This program computes the entropy of a network such as
-a social organization to evaluate its adaptability.
-Only the case of undirected networks without self-loops
-are implemented (case 3). Multiple edges between two same nodes
-are possible and should be used for each different
+"""This program computes the entropy of a network such as a social
+organization to evaluate its adaptability. Only the case of undirected
+networks without self-loops is implemented (case 3). Multiple edges
+between two same nodes are possible and should be used for each different
 interaction between these nodes.
 """
 
 
-from math import log, comb, factorial
+# Third party packages
 import numpy as np
-from scipy.optimize import fsolve
-import matplotlib.pyplot as plt
+import pandas as pd
 import networkx as nx
+from scipy.optimize import fsolve
+from math import log, comb, factorial
+
+
+__all__ = ['Network', 'multinomial_entropy']
 
 
 def multinomial_entropy(n, m, Xi, Omega, p, log_base):
     r""" Compute the multinomial entropy and returns it.
     math::
-        \[ H^{mult} = - \log (m!) - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij})
+        \[ H^{mult} = - \log (m!)
+                      - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij})
                       + \sum_{x=2}^m \sum_{i,j \in V, i<j} p_{ij}^x (1-p_{ij})^{m-x} \log(x!) \]
     """
-    s1 = sum([p[i,j] * log(p[i,j], log_base) if p[i,j]!=0 else 0
-                        for i in range(n)
-                        for j in range(n)])
-    s2 = sum([sum([comb(m, x) * p[i,j]**x * (1-p[i,j])**(m-x) * log(factorial(x), log_base)
-                         if p[i,j]!=0 else 0
-                         for i in range(n)
-                         for j in range(n)])
-                    for x in range(2, m+1)])
-    H_mult = - log(factorial(m), log_base) - m * s1 + s2
+    s1 = sum([p[i,j] * log(p[i,j], log_base)
+              if p[i,j] != 0 else 0
+              for i in range(n)
+              for j in range(n)])
+    s2 = sum([sum([(comb(m, x) * p[i,j]**x * (1-p[i,j])**(m-x)
+                    * log(factorial(x), log_base))
+                   if p[i,j] != 0 else 0
+                   for i in range(n)
+                   for j in range(n)])
+              for x in range(2, m+1)])
+    H_mult = - log(factorial(m), log_base) - m*s1 + s2
     return H_mult
 
 
@@ -66,9 +71,11 @@ class Network():
         Graph of the network in the type of nx.Graph, nx.DiGraph,
         nx.MultiGraph, or nx.MultiDiGraph
     case: int
-        Case of the graph, 0: directed with self-loops,
-        1: undirected with self-loops, 2: directed without
-        self-loops, 3: undirected without self-loops
+        Case of the graph,
+            0: directed with self-loops,
+            1: undirected with self-loops,
+            2: directed without self-loops,
+            3: undirected without self-loops
     log_base: int
         Logarithmic base to use when computing the entropy.
     Xi: np.array
@@ -89,7 +96,7 @@ class Network():
     do_the_work
     display
     """
-    def __init__(self, network, case=0, log_base=2, name='network', edges_matrix=None):
+    def __init__(self, network, case=3, log_base=2, name='network', edges_matrix=None):
         self.network = network
         self.case = case
         self.log_base = log_base
@@ -179,9 +186,11 @@ class Network():
             theta = np.ones(n)
         else:
             x0 = np.ones(n)
-            theta, details, success, msg = fsolve(f, x0, args=(n, m, case), full_output=True)
+            theta, details, success, msg = fsolve(f, x0, args=(n, m, case),
+                                                  full_output=True)
             if not success:
-                print('Error while computing theta! fsolve could not solve the system of equations')
+                print(('Error while computing theta! fsolve could not solve '
+                       'the system of equations'))
                 print('Details: {}'.format(details))
                 print('Message: {}'.format(msg))
         self.theta = theta
@@ -191,27 +200,28 @@ class Network():
         m = self.m
         p = np.ones((n,n))
         p = self.Xi * self.Omega / np.sum(self.Xi * self.Omega)
-        self.H_mult = multinomial_entropy(n, m, self.Xi, self.Omega, p, self.log_base)
+        self.H_mult = multinomial_entropy(n, m, self.Xi, self.Omega, p,
+                                          self.log_base)
     
     def _compute_H_max(self):
         case = self.case
         n = self.n
         m = self.m
         if case == 3:
-            p = [[2 / (n * (n-1)) if i<j else 0
-                  for j in range(n)]
-                 for i in range(n)]
-            p = np.array(p)
+            p = np.array([[2 / (n * (n-1)) if i < j else 0 for j in range(n)]
+                          for i in range(n)])
         else:
             print('Error: p_ij_max not defined for the case {}'.format(case))
         
-        self.H_max = multinomial_entropy(n, m, self.Xi, self.Omega, p, self.log_base)
+        self.H_max = multinomial_entropy(n, m, self.Xi, self.Omega, p,
+                                         self.log_base)
     
     def _compute_H_norm(self):
         self.H_norm = self.H_mult / self.H_max
     
-    def __call__(self):
-        """ Perform all computations to set the attributes that are currently None type.
+    def do_the_work(self):
+        """ Perform all computations to set the attributes that are
+        currently None type.
         """
         self._compute_theta()
         self._compute_Xi()
@@ -220,13 +230,16 @@ class Network():
         self._compute_H_max()
         self._compute_H_norm()
     
-    def __repr__(self):
-        """ Display the graph of the network as well as some more information,
-        n: number of nodes, m: number of edges, m/n: average number of multi-
-        edges per nodes, D: density of the network, H_mult: normalized multinomial entropy.
+    def display(self, precision=None):
+        """ Display the graph of the network as well as some more
+        information,
+            n: number of nodes,
+            m: number of edges,
+            m/n: average number of multi-edges per nodes,
+            D: density of the network,
+            H_mult: normalized multinomial entropy.
         """
         nx.draw_circular(self.network)
-        
         case = self.case
         name = self.name
         n = self.n
@@ -236,16 +249,23 @@ class Network():
             # case with self-loops
             D = sum([1 if A[i,j] != 0 else 0
                      for i in range(n)
-                     for j in range(n)]) / (n**2)
+                     for j in range(n)]) / n**2
         elif case in [2, 3]:
             # case without self-loops
-            D = 2*sum([1 if A[i,j] != 0 else 0
-                       for i in range(n)
-                       for j in range(n)]) / (n**2 - n)
-        
+            D = 2 * sum([1 if A[i,j] != 0 else 0
+                         for i in range(n)
+                         for j in range(n)]) / (n**2 - n)
         H_mult = self.H_mult
         H_norm = self.H_norm
         H_gcc = 'NA'
-        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>6} '.format('Name', 'n', 'm', 'm/n', 'D', 'H_norm'))
-        print((16 + 20 + 4*5 + 2*5) * '-')
-        print(' {:<20} | {:>5}  {:>5}  {:>5}  {:>5} | {:>5} '.format(name, n, m, '{:.2f}'.format(m/n), '{:.2f}'.format(D), '{:.2f}'.format(H_norm)))
+        if precision is not None:
+            pd.options.display.float_format = ''.join(['{:.',
+                                                       str(precision),
+                                                       'f}']).format
+        df = pd.DataFrame.from_dict({'Name': [name],
+                                     'n': [n],
+                                     'm': [m],
+                                     'm/n': [m/n],
+                                     'D': [D],
+                                     'H_norm': [H_norm]})
+        print(df)

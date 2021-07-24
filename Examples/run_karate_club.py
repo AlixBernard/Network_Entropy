@@ -12,7 +12,6 @@ from the karate.dat file and process it to obtain its entropy.
 
 
 # Third party packages
-import os
 import numpy as np
 import networkx as nx
 from pathlib import Path
@@ -23,8 +22,7 @@ from network_entropy import Network
 
 # Get edges of the network matrix from the file data_path
 data_name = "Karate Club"
-data_folder = Path('/'.join(os.path.realpath(__file__).split('/')[:-2]
-                            + ["Data"]))
+data_folder = Path(Path(__file__).resolve().parent.parent / "Data")
 data_filename = Path("karate_club.dat")
 data_path = Path(data_folder / data_filename)
 matrix_size = 34

@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 17:01:31
+# @Last modified time: 2022-10-05 18:25:45
 
 """This program computes the entropy of a network such as a social
 organization to evaluate its adaptability. Only the case of undirected
@@ -15,6 +15,7 @@ interaction between these nodes.
 
 
 # Built-in packages
+import itertools
 from math import log, comb, factorial
 
 # Third party packages
@@ -35,6 +36,17 @@ def multinomial_entropy(n, m, Xi, Omega, p, log_base):
         \[ H^{mult} = - \log (m!)
                       - m  \sum_{i,j \in V, i<j} p_{ij} \log (p_{ij})
                       + \sum_{x=2}^m \sum_{i,j \in V, i<j} p_{ij}^x (1-p_{ij})^{m-x} \log(x!) \]
+
+    Parameters
+    ----------
+    n, m: int
+        Number of vertices and edges respectively.
+    Xi: np.array
+        Matrix encoding the configuration model.
+    Omega: np.array
+        Matrix encoding the preferences of the nodes.
+    log_base: int
+        Logarithmic base to use when computing the entropy.
     """
     s1 = sum(
         [
@@ -68,34 +80,17 @@ def multinomial_entropy(n, m, Xi, Omega, p, log_base):
 
 class Network:
     """
-    Parameters
-    ----------
-    network: nx.Graph
-        Graph of the network in the type of nx.Graph, nx.DiGraph,
-        nx.MultiGraph, or nx.MultiDiGraph
-    case: int
-        Case of the graph, 0: directed with self-loops,
-        1: undirected with self-loops, 2: directed without
-        self-loops, 3: undirected without self-loops
-    log_base: int
-        Logarithmic base to use when computing the entropy.
-    name: str
-        Name of the network
-    edges_matrix: np.array
-        Matrix of the graph edges, if None then taken without
-        multi-edges from the nx.Graph input
-
     Attributes
     ----------
     network: nx.Graph
         Graph of the network in the type of nx.Graph, nx.DiGraph,
         nx.MultiGraph, or nx.MultiDiGraph
     case: int
-        Case of the graph,
-            0: directed with self-loops,
-            1: undirected with self-loops,
-            2: directed without self-loops,
-            3: undirected without self-loops
+        Case of the graph:
+            0 -> directed with self-loops
+            1 -> undirected with self-loops
+            2 -> directed without self-loops
+            3 -> undirected without self-loops
     log_base: int
         Logarithmic base to use when computing the entropy.
     Xi: np.array
@@ -110,6 +105,8 @@ class Network:
         Maximum multinomial entropy attainable for the network.
     H_norm: float
         Normalized multinomial entropy of the network.
+    n, m: int
+        Number of vertices and edges respectively.
 
     Methods
     -------
@@ -118,17 +115,39 @@ class Network:
     """
 
     def __init__(self, network, case=3, log_base=2, name="network", edges_matrix=None):
+        """
+        Parameters
+        ----------
+        network: nx.Graph
+            Graph of the network in the type of nx.Graph, nx.DiGraph,
+            nx.MultiGraph, or nx.MultiDiGraph
+        case: int
+            Case of the graph:
+                0 -> directed with self-loops
+                1 -> undirected with self-loops
+                2 -> directed without self-loops
+                3 -> undirected without self-loops
+        log_base: int
+            Logarithmic base to use when computing the entropy.
+        name: str
+            Name of the network
+        edges_matrix: np.array
+            Matrix of the graph edges, if None then taken without
+            multi-edges from the nx.Graph input
+
+        """
         self.network = network
         self.case = case
         self.log_base = log_base
         self.name = name
-        self.verticies = nx.nodes(self.network)
-        self.n = int(len(self.verticies))
+        self.vertices = nx.nodes(self.network)
+        self.n = len(self.vertices)
         n = self.n
+
         if edges_matrix.all() == None:
             self.edges = nx.edges(self.network)
             self.A = self._get_edges_connexions()
-            self.m = int(len(self.edges))
+            self.m = len(self.edges)
         else:
             self.edges = edges_matrix
             self.A = edges_matrix
@@ -141,7 +160,7 @@ class Network:
                     ]
                 )
             )
-        n = self.n
+
         m = self.m
         self.nb_possible_networks = comb(int(n * (n - 1) / 2 + m - 1), m)
         self.d = np.array(
@@ -158,9 +177,9 @@ class Network:
         n = self.n
         A = np.zeros((n, n))
         i = 0
-        for v1 in self.verticies:
+        for v1 in self.vertices:
             j = 0
-            for v2 in self.verticies:
+            for v2 in self.vertices:
                 A[i, j] = len(nx.edges(nx.subgraph(self.network, [v1, v2])))
                 j += 1
             i += 1
@@ -168,27 +187,21 @@ class Network:
 
     def _compute_Xi(self):
         n = self.n
-        m = self.m
         Xi = np.zeros((n, n))
-        for i in range(n):
-            for j in range(n):
-                if i < j:
-                    Xi[i, j] = 2 * self.d[i] * self.d[j] * self.theta[i] * self.theta[j]
+        for i, j in itertools.product(range(n), range(n)):
+            if i < j:
+                Xi[i, j] = 2 * self.d[i] * self.d[j] * self.theta[i] * self.theta[j]
         self.Xi = Xi
 
     def _compute_Omega(self):
         n = self.n
-        m = self.m
         Omega = np.zeros((n, n))
-        for i in range(n):
-            for j in range(n):
-                if i < j:
-                    if self.A[i, j] != self.Xi[i, j]:
-                        Omega[i, j] = log(
-                            1 - (self.A[i, j] / self.Xi[i, j]), self.log_base
-                        )
-                    else:
-                        print("Error: A_ij == Xi_ij for i={}, j={}".format(i, j))
+        for i, j in itertools.product(range(n), range(n)):
+            if i < j:
+                if self.A[i, j] != self.Xi[i, j]:
+                    Omega[i, j] = log(1 - self.A[i, j] / self.Xi[i, j], self.log_base)
+                else:
+                    print(f"Error: A_ij == Xi_ij for {i=}, {j=}")
         c = 1
         if np.amin(Omega) != 0:
             c = np.amin(Omega)
@@ -202,6 +215,8 @@ class Network:
                 coef = m**2
             elif case == 3:
                 coef = 4 * m**2
+            # ? `coef` not used
+
             sol = np.array(
                 [
                     (x[i] / (2 * m))
@@ -212,15 +227,14 @@ class Network:
             )
             return sol
 
-        case = self.case
         n = self.n
         m = self.m
-        if case in [0, 1]:
+        if self.case in [0, 1]:
             theta = np.ones(n)
         else:
             x0 = np.ones(n)
             theta, details, success, msg = fsolve(
-                f, x0, args=(n, m, case), full_output=True
+                f, x0, args=(n, m, self.case), full_output=True
             )
             if not success:
                 print(
@@ -236,7 +250,6 @@ class Network:
     def _compute_H_mult(self):
         n = self.n
         m = self.m
-        p = np.ones((n, n))
         p = self.Xi * self.Omega / np.sum(self.Xi * self.Omega)
         self.H_mult = multinomial_entropy(n, m, self.Xi, self.Omega, p, self.log_base)
 
@@ -262,6 +275,7 @@ class Network:
     def do_the_work(self):
         """Perform all computations to set the attributes that are
         currently None type.
+
         """
         self._compute_theta()
         self._compute_Xi()
@@ -278,6 +292,7 @@ class Network:
             m/n: average number of multi-edges per nodes,
             D: density of the network,
             H_mult: normalized multinomial entropy.
+
         """
         nx.draw_circular(self.network)
         case = self.case

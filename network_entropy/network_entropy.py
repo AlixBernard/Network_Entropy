@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 18:51:27
+# @Last modified time: 2022-10-06 01:16:52
 
 """This program computes the entropy of a network such as a social
 organization to evaluate its adaptability. Only the case of undirected
@@ -55,6 +55,12 @@ def multinomial_entropy(n, m, Xi, Omega, p, log_base):
         Mutlinomial entropy.
 
     """
+
+    def func(m, x, p_ij, log_base):
+        return (
+            comb(m, x) * p_ij**x * (1 - p_ij) ** (m - x) * log(factorial(x), log_base)
+        )
+
     s1 = sum(
         [
             p[i, j] * log(p[i, j], log_base) if p[i, j] != 0 else 0
@@ -65,14 +71,7 @@ def multinomial_entropy(n, m, Xi, Omega, p, log_base):
         [
             sum(
                 [
-                    (
-                        comb(m, x)
-                        * p[i, j] ** x
-                        * (1 - p[i, j]) ** (m - x)
-                        * log(factorial(x), log_base)
-                    )
-                    if p[i, j] != 0
-                    else 0
+                    func(m, x, p[i, j], log_base) if p[i, j] != 0 else 0
                     for i, j in itertools.product(range(n), range(n))
                 ]
             )

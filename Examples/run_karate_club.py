@@ -4,45 +4,64 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2021-07-23
+# @Last modified time: 2022-10-05 18:02:18
 
 """Program reading the karate club data set from its edges matrix
 from the karate.dat file and process it to obtain its entropy.
 """
 
 
+# Built-in packages
+from pathlib import Path
+
 # Third party packages
 import numpy as np
 import networkx as nx
-from pathlib import Path
 
 # Local packages
 from network_entropy import Network
 
 
-# Get edges of the network matrix from the file data_path
-data_name = "Karate Club"
-data_folder = Path(Path(__file__).resolve().parent.parent / "Data")
-data_filename = Path("karate_club.dat")
-data_path = Path(data_folder / data_filename)
-matrix_size = 34
-edges = np.zeros((matrix_size, matrix_size))
-with open(data_path, 'r') as file:
-    i = 0
-    for line in file.readlines():
-        if line[0] != ' ':
-            continue
-        line = line.strip().split(' ')
-        
-        if matrix_size != len(line):
-            print("Matrix size error")
-        
-        for j in range(matrix_size):
-            edges[i,j] = line[j]
-        i += 1
+DATA_FOLDER = Path(__file__).resolve().parents[1] / "Data"
 
 
-g = nx.MultiGraph(edges)
-org = Network(g, name=data_name, case=3, edges_matrix=edges)
-org.do_the_work()
-org.display(precision=3)
+def get_edges(data_path, matrix_size):
+    """Get the edges of the network matric from the file `data_path` and
+    returns them as an array.
+
+    """
+    edges = np.zeros((matrix_size, matrix_size))
+    with open(data_path, "r") as file:
+        i = 0
+        for line in file.readlines():
+            if line[0] != " ":
+                # Skip lines until matrix without incrementing `i`
+                continue
+
+            line = line.strip().split(" ")
+
+            if matrix_size != len(line):
+                print("Matrix size error")
+
+            edges[i] = line
+            i += 1
+
+    return edges
+
+
+def main():
+    # Define paths
+    data_name = "Karate Club"
+    data_filename = "karate_club.dat"
+    data_path = DATA_FOLDER / data_filename
+
+    edges = get_edges(data_path, matrix_size=34)
+    g = nx.MultiGraph(edges)
+
+    org = Network(g, name=data_name, case=3, edges_matrix=edges)
+    org.do_the_work()
+    org.display(precision=3)
+
+
+if __name__ == "__main__":
+    main()

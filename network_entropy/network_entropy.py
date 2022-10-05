@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 18:42:08
+# @Last modified time: 2022-10-05 18:51:27
 
 """This program computes the entropy of a network such as a social
 organization to evaluate its adaptability. Only the case of undirected
@@ -45,14 +45,20 @@ def multinomial_entropy(n, m, Xi, Omega, p, log_base):
         Matrix encoding the configuration model.
     Omega: np.array
         Matrix encoding the preferences of the nodes.
+    p: ?
     log_base: int
         Logarithmic base to use when computing the entropy.
+
+    Returns
+    -------
+    H_mult: float
+        Mutlinomial entropy.
+
     """
     s1 = sum(
         [
             p[i, j] * log(p[i, j], log_base) if p[i, j] != 0 else 0
-            for i in range(n)
-            for j in range(n)
+            for i, j in itertools.product(range(n), range(n))
         ]
     )
     s2 = sum(
@@ -67,8 +73,7 @@ def multinomial_entropy(n, m, Xi, Omega, p, log_base):
                     )
                     if p[i, j] != 0
                     else 0
-                    for i in range(n)
-                    for j in range(n)
+                    for i, j in itertools.product(range(n), range(n))
                 ]
             )
             for x in range(2, m + 1)
@@ -316,7 +321,7 @@ class Network:
             pd.options.display.float_format = "".join(
                 ["{:.", str(precision), "f}"]
             ).format
-            
+
         df = pd.DataFrame.from_dict(
             {
                 "Name": [self.name],

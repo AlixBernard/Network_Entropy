@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 18:25:45
+# @Last modified time: 2022-10-05 18:42:08
 
 """This program computes the entropy of a network such as a social
 organization to evaluate its adaptability. Only the case of undirected
@@ -176,13 +176,9 @@ class Network:
     def _get_edges_connexions(self):
         n = self.n
         A = np.zeros((n, n))
-        i = 0
-        for v1 in self.vertices:
-            j = 0
-            for v2 in self.vertices:
+        for i, v1 in enumerate(self.vertices):
+            for j, v2 in enumerate(self.vertices):
                 A[i, j] = len(nx.edges(nx.subgraph(self.network, [v1, v2])))
-                j += 1
-            i += 1
         return A
 
     def _compute_Xi(self):
@@ -197,15 +193,19 @@ class Network:
         n = self.n
         Omega = np.zeros((n, n))
         for i, j in itertools.product(range(n), range(n)):
-            if i < j:
-                if self.A[i, j] != self.Xi[i, j]:
-                    Omega[i, j] = log(1 - self.A[i, j] / self.Xi[i, j], self.log_base)
-                else:
-                    print(f"Error: A_ij == Xi_ij for {i=}, {j=}")
+            if i >= j:
+                continue
+
+            if self.A[i, j] != self.Xi[i, j]:
+                Omega[i, j] = log(1 - self.A[i, j] / self.Xi[i, j], self.log_base)
+            else:
+                print(f"Error: A_ij == Xi_ij for {i=}, {j=}")
+
         c = 1
         if np.amin(Omega) != 0:
             c = np.amin(Omega)
-            Omega = Omega / c
+            Omega /= c
+
         self.Omega = Omega
 
     def _compute_theta(self):
@@ -228,36 +228,32 @@ class Network:
             return sol
 
         n = self.n
-        m = self.m
         if self.case in [0, 1]:
             theta = np.ones(n)
         else:
             x0 = np.ones(n)
             theta, details, success, msg = fsolve(
-                f, x0, args=(n, m, self.case), full_output=True
+                f, x0, args=(n, self.m, self.case), full_output=True
             )
             if not success:
                 print(
-                    (
-                        "Error while computing theta! fsolve could not solve "
-                        "the system of equations"
-                    )
+                    "Error while computing theta! fsolve could not solve the "
+                    "system of equations"
                 )
-                print("Details: {}".format(details))
-                print("Message: {}".format(msg))
+                print(f"Details: {details}")
+                print(f"Message: {msg}")
+
         self.theta = theta
 
     def _compute_H_mult(self):
-        n = self.n
-        m = self.m
         p = self.Xi * self.Omega / np.sum(self.Xi * self.Omega)
-        self.H_mult = multinomial_entropy(n, m, self.Xi, self.Omega, p, self.log_base)
+        self.H_mult = multinomial_entropy(
+            self.n, self.m, self.Xi, self.Omega, p, self.log_base
+        )
 
     def _compute_H_max(self):
-        case = self.case
-        n = self.n
-        m = self.m
-        if case == 3:
+        n, m = self.n, self.m
+        if self.case == 3:
             p = np.array(
                 [
                     [2 / (n * (n - 1)) if i < j else 0 for j in range(n)]
@@ -265,7 +261,7 @@ class Network:
                 ]
             )
         else:
-            print("Error: p_ij_max not defined for the case {}".format(case))
+            print(f"Error: p_ij_max not defined for case {self.case}")
 
         self.H_max = multinomial_entropy(n, m, self.Xi, self.Omega, p, self.log_base)
 
@@ -295,34 +291,35 @@ class Network:
 
         """
         nx.draw_circular(self.network)
-        case = self.case
-        name = self.name
-        n = self.n
-        m = self.m
+        n, m = self.n, self.m
         A = self.A
-        if case in [0, 1]:
+
+        if self.case in [0, 1]:
             # case with self-loops
             D = (
                 sum([1 if A[i, j] != 0 else 0 for i in range(n) for j in range(n)])
                 / n**2
             )
-        elif case in [2, 3]:
+        elif self.case in [2, 3]:
             # case without self-loops
             D = (
                 2
                 * sum([1 if A[i, j] != 0 else 0 for i in range(n) for j in range(n)])
                 / (n**2 - n)
             )
+
         H_mult = self.H_mult
         H_norm = self.H_norm
         H_gcc = "NA"
+
         if precision is not None:
             pd.options.display.float_format = "".join(
                 ["{:.", str(precision), "f}"]
             ).format
+            
         df = pd.DataFrame.from_dict(
             {
-                "Name": [name],
+                "Name": [self.name],
                 "n": [n],
                 "m": [m],
                 "m/n": [m / n],

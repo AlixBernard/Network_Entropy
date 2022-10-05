@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 17:57:06
+# @Last modified time: 2022-10-05 18:02:18
 
 """Program reading the karate club data set from its edges matrix
 from the karate.dat file and process it to obtain its entropy.
@@ -53,7 +53,7 @@ def main():
     # Define paths
     data_name = "Karate Club"
     data_filename = "karate_club.dat"
-    data_path = data_folder / data_filename
+    data_path = DATA_FOLDER / data_filename
 
     edges = get_edges(data_path, matrix_size=34)
     g = nx.MultiGraph(edges)

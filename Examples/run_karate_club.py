@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 17:38:34
+# @Last modified time: 2022-10-05 17:57:06
 
 """Program reading the karate club data set from its edges matrix
 from the karate.dat file and process it to obtain its entropy.
@@ -22,6 +22,9 @@ import networkx as nx
 from network_entropy import Network
 
 
+DATA_FOLDER = Path(__file__).resolve().parents[1] / "Data"
+
+
 def get_edges(data_path, matrix_size):
     """Get the edges of the network matric from the file `data_path` and
     returns them as an array.
@@ -32,23 +35,24 @@ def get_edges(data_path, matrix_size):
         i = 0
         for line in file.readlines():
             if line[0] != " ":
+                # Skip lines until matrix without incrementing `i`
                 continue
+
             line = line.strip().split(" ")
 
             if matrix_size != len(line):
                 print("Matrix size error")
 
-            for j in range(matrix_size):
-                edges[i, j] = line[j]
+            edges[i] = line
             i += 1
 
     return edges
+
 
 def main():
     # Define paths
     data_name = "Karate Club"
     data_filename = "karate_club.dat"
-    data_folder = Path(__file__).resolve().parents[1] / "Data"
     data_path = data_folder / data_filename
 
     edges = get_edges(data_path, matrix_size=34)

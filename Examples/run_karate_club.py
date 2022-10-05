@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 17:07:41
+# @Last modified time: 2022-10-05 17:08:53
 
 """Program reading the karate club data set from its edges matrix
 from the karate.dat file and process it to obtain its entropy.
@@ -29,18 +29,18 @@ data_filename = Path("karate_club.dat")
 data_path = Path(data_folder / data_filename)
 matrix_size = 34
 edges = np.zeros((matrix_size, matrix_size))
-with open(data_path, 'r') as file:
+with open(data_path, "r") as file:
     i = 0
     for line in file.readlines():
-        if line[0] != ' ':
+        if line[0] != " ":
             continue
-        line = line.strip().split(' ')
-        
+        line = line.strip().split(" ")
+
         if matrix_size != len(line):
             print("Matrix size error")
-        
+
         for j in range(matrix_size):
-            edges[i,j] = line[j]
+            edges[i, j] = line[j]
         i += 1
 
 

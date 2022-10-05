@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2021-07-23
+# @Last modified time: 2022-10-05 16:58:15
 
 """This program computes the entropy of a network such as a social
 organization to evaluate its adaptability. Only the case of undirected
@@ -14,12 +14,16 @@ interaction between these nodes.
 """
 
 
+# Built-in packages
+from math import log, comb, factorial
+
 # Third party packages
 import numpy as np
 import pandas as pd
 import networkx as nx
 from scipy.optimize import fsolve
-from math import log, comb, factorial
+
+# Local packages
 
 
 __all__ = ['Network', 'multinomial_entropy']

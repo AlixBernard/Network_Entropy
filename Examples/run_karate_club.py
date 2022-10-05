@@ -4,17 +4,19 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2021-07-23
+# @Last modified time: 2022-10-05 17:07:41
 
 """Program reading the karate club data set from its edges matrix
 from the karate.dat file and process it to obtain its entropy.
 """
 
 
+# Built-in packages
+from pathlib import Path
+
 # Third party packages
 import numpy as np
 import networkx as nx
-from pathlib import Path
 
 # Local packages
 from network_entropy import Network

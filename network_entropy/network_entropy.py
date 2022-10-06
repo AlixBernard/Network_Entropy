@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-06 01:16:52
+# @Last modified time: 2022-10-06 11:27:46
 
 """This program computes the entropy of a network such as a social
 organization to evaluate its adaptability. Only the case of undirected
@@ -95,6 +95,7 @@ class Network:
             1 -> undirected with self-loops
             2 -> directed without self-loops
             3 -> undirected without self-loops
+        ONLY CASE 3 SUPPORTED
     log_base: int
         Logarithmic base to use when computing the entropy.
     Xi: np.array
@@ -131,6 +132,7 @@ class Network:
                 1 -> undirected with self-loops
                 2 -> directed without self-loops
                 3 -> undirected without self-loops
+            ONLY CASE 3 SUPPORTED
         log_base: int
             Logarithmic base to use when computing the entropy.
         name: str
@@ -139,7 +141,15 @@ class Network:
             Matrix of the graph edges, if None then taken without
             multi-edges from the nx.Graph input
 
+        Raises
+        ------
+        NotImplementedError
+            If a case different than 3 is used.
+
         """
+        if case != 3:
+            raise NotImplementedError("Error: Only the case 3 is implemented")
+
         self.network = network
         self.case = case
         self.log_base = log_base
@@ -159,8 +169,7 @@ class Network:
                 sum(
                     [
                         edges_matrix[i, j] if i <= j else 0
-                        for j in range(n)
-                        for i in range(n)
+                        for i, j in itertools.product(range(n), range(n))
                     ]
                 )
             )
@@ -241,8 +250,8 @@ class Network:
             )
             if not success:
                 print(
-                    "Error while computing theta! fsolve could not solve the "
-                    "system of equations"
+                    "Error: while computing `theta` fsolve could not solve the"
+                    " system of equations"
                 )
                 print(f"Details: {details}")
                 print(f"Message: {msg}")
@@ -292,6 +301,12 @@ class Network:
             m/n: average number of multi-edges per nodes,
             D: density of the network,
             H_mult: normalized multinomial entropy.
+
+        Parameters
+        ----------
+        precision: int | None
+            Precision with which to display float numbers.
+            Default is None.
 
         """
         nx.draw_circular(self.network)

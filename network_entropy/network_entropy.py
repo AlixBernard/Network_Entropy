@@ -4,18 +4,19 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-06 11:27:46
+# @Last modified time: 2022-10-07 17:50:34
 
 """This program computes the entropy of a network such as a social
-organization to evaluate its adaptability. Only the case of undirected
-networks without self-loops is implemented (case 3). Multiple edges
-between two same nodes are possible and should be used for each different
+organization to evaluate its adaptability. Only the graphs of undirected
+networks without self-loops is implemented. Multiple edges between two
+same nodes are possible and should be used for each different
 interaction between these nodes.
 """
 
 
 # Built-in packages
 import itertools
+from enum import Enum
 from math import log, comb, factorial
 
 # Third party packages
@@ -27,7 +28,14 @@ from scipy.optimize import fsolve
 # Local packages
 
 
-__all__ = ["Network", "multinomial_entropy"]
+__all__ = ["GraphType", "Network", "multinomial_entropy"]
+
+
+class GraphType(Enum):
+    DIRECTED_WITH_SELF_LOOPS = "directed with self-loops"
+    DIRECTED_WITHOUT_SELF_LOOPS = "directed without self-loops"
+    UNDIRECTED_WITH_SELF_LOOPS = "undirected with self-loops"
+    UNDIRECTED_WITHOUT_SELF_LOOPS = "undirected without self-loops"
 
 
 def multinomial_entropy(n, m, Xi, Omega, p, log_base):
@@ -89,13 +97,9 @@ class Network:
     network: nx.Graph
         Graph of the network in the type of nx.Graph, nx.DiGraph,
         nx.MultiGraph, or nx.MultiDiGraph
-    case: int
-        Case of the graph:
-            0 -> directed with self-loops
-            1 -> undirected with self-loops
-            2 -> directed without self-loops
-            3 -> undirected without self-loops
-        ONLY CASE 3 SUPPORTED
+    graph_type: GraphType
+        The type of the graph.
+        Only GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS is supported.
     log_base: int
         Logarithmic base to use when computing the entropy.
     Xi: np.array
@@ -103,7 +107,7 @@ class Network:
     Omega: np.array
         Matrix encoding the preferences of the nodes.
     theta: np.array
-        Correction vector for the cases 2 and 3, unit vector otherwise.
+        Correction vector for undirected graphs, unit vector otherwise.
     H_mult: float
         Multinomial entropy of the network.
     H_max: float
@@ -119,39 +123,40 @@ class Network:
     display
     """
 
-    def __init__(self, network, case=3, log_base=2, name="network", edges_matrix=None):
+    def __init__(
+        self, network, graph_type, log_base=2, name="network", edges_matrix=None
+    ):
         """
         Parameters
         ----------
-        network: nx.Graph
-            Graph of the network in the type of nx.Graph, nx.DiGraph,
-            nx.MultiGraph, or nx.MultiDiGraph
-        case: int
-            Case of the graph:
-                0 -> directed with self-loops
-                1 -> undirected with self-loops
-                2 -> directed without self-loops
-                3 -> undirected without self-loops
-            ONLY CASE 3 SUPPORTED
+        network: nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph
+            Graph of the network.
+        graph_type: GraphType
+            The type of the graph.
+            Only GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS is supported.
         log_base: int
             Logarithmic base to use when computing the entropy.
         name: str
-            Name of the network
+            Name of the network.
         edges_matrix: np.array
             Matrix of the graph edges, if None then taken without
-            multi-edges from the nx.Graph input
+            multi-edges from the nx.Graph input.
 
         Raises
         ------
         NotImplementedError
-            If a case different than 3 is used.
+            If the tye of the graph is different from
+            GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS.
 
         """
-        if case != 3:
-            raise NotImplementedError("Error: Only the case 3 is implemented")
+        if graph_type != GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS:
+            raise NotImplementedError(
+                "Error: Only implemented for:"
+                f"\n- graphs {GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS}"
+            )
 
         self.network = network
-        self.case = case
+        self.graph_type = graph_type
         self.log_base = log_base
         self.name = name
         self.vertices = nx.nodes(self.network)
@@ -222,11 +227,11 @@ class Network:
         self.Omega = Omega
 
     def _compute_theta(self):
-        def f(x, n, m, case):
+        def f(x, n, m, graph_type):
             d = self.d
-            if case == 2:
+            if graph_type is GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS:
                 coef = m**2
-            elif case == 3:
+            elif graph_type is GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS:
                 coef = 4 * m**2
             # ? `coef` not used
 
@@ -241,12 +246,15 @@ class Network:
             return sol
 
         n = self.n
-        if self.case in [0, 1]:
+        if self.graph_type in [
+            GraphType.DIRECTED_WITH_SELF_LOOPS,
+            GraphType.UNDIRECTED_WITH_SELF_LOOPS,
+        ]:
             theta = np.ones(n)
         else:
             x0 = np.ones(n)
             theta, details, success, msg = fsolve(
-                f, x0, args=(n, self.m, self.case), full_output=True
+                f, x0, args=(n, self.m, self.graph_type), full_output=True
             )
             if not success:
                 print(
@@ -266,7 +274,7 @@ class Network:
 
     def _compute_H_max(self):
         n, m = self.n, self.m
-        if self.case == 3:
+        if self.graph_type is GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS:
             p = np.array(
                 [
                     [2 / (n * (n - 1)) if i < j else 0 for j in range(n)]
@@ -274,7 +282,7 @@ class Network:
                 ]
             )
         else:
-            print(f"Error: p_ij_max not defined for case {self.case}")
+            print(f"Error: p_ij_max not defined for graph type {self.graph_type}")
 
         self.H_max = multinomial_entropy(n, m, self.Xi, self.Omega, p, self.log_base)
 
@@ -313,14 +321,20 @@ class Network:
         n, m = self.n, self.m
         A = self.A
 
-        if self.case in [0, 1]:
-            # case with self-loops
+        if self.graph_type in [
+            GraphType.DIRECTED_WITH_SELF_LOOPS,
+            GraphType.UNDIRECTED_WITH_SELF_LOOPS,
+        ]:
+            # Graph with self-loops
             D = (
                 sum([1 if A[i, j] != 0 else 0 for i in range(n) for j in range(n)])
                 / n**2
             )
-        elif self.case in [2, 3]:
-            # case without self-loops
+        elif self.graph_type in [
+            GraphType.DIRECTED_WITHOUT_SELF_LOOPS,
+            GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS,
+        ]:
+            # Graph without self-loops
             D = (
                 2
                 * sum([1 if A[i, j] != 0 else 0 for i in range(n) for j in range(n)])

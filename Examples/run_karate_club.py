@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-05 18:02:18
+# @Last modified time: 2022-10-07 17:54:51
 
 """Program reading the karate club data set from its edges matrix
 from the karate.dat file and process it to obtain its entropy.
@@ -19,7 +19,7 @@ import numpy as np
 import networkx as nx
 
 # Local packages
-from network_entropy import Network
+from network_entropy import Network, GraphType
 
 
 DATA_FOLDER = Path(__file__).resolve().parents[1] / "Data"
@@ -58,7 +58,12 @@ def main():
     edges = get_edges(data_path, matrix_size=34)
     g = nx.MultiGraph(edges)
 
-    org = Network(g, name=data_name, case=3, edges_matrix=edges)
+    org = Network(
+        g,
+        name=data_name,
+        graph_type=GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS,
+        edges_matrix=edges,
+    )
     org.do_the_work()
     org.display(precision=3)
 

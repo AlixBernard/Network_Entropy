@@ -4,7 +4,7 @@
 # @Email: alix.bernard9@gmail.com
 # @Date: 2020-12-01
 # @Last modified by: AlixBernard
-# @Last modified time: 2022-10-07 17:50:34
+# @Last modified time: 2022-10-07 17:59:26
 
 """This program computes the entropy of a network such as a social
 organization to evaluate its adaptability. Only the graphs of undirected
@@ -149,10 +149,9 @@ class Network:
             GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS.
 
         """
-        if graph_type != GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS:
+        if graph_type is not GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS:
             raise NotImplementedError(
-                "Error: Only implemented for:"
-                f"\n- graphs {GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS}"
+                f"Only implemented for graphs {GraphType.UNDIRECTED_WITHOUT_SELF_LOOPS}"
             )
 
         self.network = network
